@@ -30,10 +30,10 @@ def parse_args():
 
     parser.add_argument('--image_size', type=int, default=1024)
     parser.add_argument('--input_size', type=int, default=512)
-    parser.add_argument('--batch_size', type=int, default=12)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epoch', type=int, default=200)
-    parser.add_argument('--save_interval', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--learning_rate', type=float, default=1e-2)
+    parser.add_argument('--max_epoch', type=int, default=150)
+    parser.add_argument('--save_interval', type=int, default=50)
 
     args = parser.parse_args()
 
@@ -53,7 +53,8 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST()
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
 
     model.train()
@@ -79,16 +80,31 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 pbar.set_postfix(val_dict)
 
         scheduler.step()
-
+        mean_loss = epoch_loss / num_batches
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
-            epoch_loss / num_batches, timedelta(seconds=time.time() - epoch_start)))
-
+            mean_loss, timedelta(seconds=time.time() - epoch_start)))
+        
+        if epoch == 0 :
+            if not osp.exists(model_dir):
+                os.makedirs(model_dir)
+            ckpt_fpath = osp.join(model_dir, 'first.pth')
+            torch.save(model.state_dict(), ckpt_fpath)
+            print(f'save frist.pth')
+        
+        elif mean_loss < pre_mean_loss :
+            ckpt_fpath = osp.join(model_dir, 'best.pth')
+            torch.save(model.state_dict(), ckpt_fpath)
+            print(f'save best_pth')
+        
         if (epoch + 1) % save_interval == 0:
             if not osp.exists(model_dir):
                 os.makedirs(model_dir)
 
             ckpt_fpath = osp.join(model_dir, 'latest.pth')
             torch.save(model.state_dict(), ckpt_fpath)
+        
+        pre_mean_loss = mean_loss
+            
 
 
 def main(args):

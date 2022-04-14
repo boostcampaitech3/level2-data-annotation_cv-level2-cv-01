@@ -54,9 +54,10 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model = EAST()
     model.to(device)
     # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
+    # optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
-
+    
     model.train()
     for epoch in range(max_epoch):
         epoch_loss, epoch_start = 0, time.time()
@@ -89,7 +90,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 os.makedirs(model_dir)
             ckpt_fpath = osp.join(model_dir, 'first.pth')
             torch.save(model.state_dict(), ckpt_fpath)
-            print(f'save frist.pth')
+            print(f'save first.pth')
         
         elif mean_loss < pre_mean_loss :
             ckpt_fpath = osp.join(model_dir, 'best.pth')

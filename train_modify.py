@@ -112,6 +112,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             ckpt_fpath = osp.join(model_dir, 'first.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'****save frist.pth****')
+            pre_mean_loss = mean_loss
             continue
         
         # eary_stopping count

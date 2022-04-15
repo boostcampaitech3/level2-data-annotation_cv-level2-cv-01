@@ -372,6 +372,25 @@ class SceneTextDataset(Dataset):
         image = np.array(image)
 
         funcs = []
+        
+        
+
+        blur_transform = A.OneOf([
+            A.GaussianBlur(),
+            A.GlassBlur(),
+            A.MotionBlur(),
+            A.MedianBlur(),
+            # A.AdvancedBlur(),
+            A.Blur()
+        ], p = 0.5)
+        noise_transform = A.OneOf([
+            A.GaussNoise(),
+            A.ISONoise(), # 카메라 센서 Noise
+            A.MultiplicativeNoise()
+        ], p = 0.5)
+        funcs.append(blur_transform)
+        funcs.append(noise_transform)
+
         if self.color_jitter:
             funcs.append(A.ColorJitter(0.5, 0.5, 0.5, 0.25))
         if self.normalize:

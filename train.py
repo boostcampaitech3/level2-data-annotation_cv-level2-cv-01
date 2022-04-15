@@ -15,6 +15,7 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from model import EAST
 
+import wandb
 
 def parse_args():
     parser = ArgumentParser()
@@ -31,8 +32,8 @@ def parse_args():
     parser.add_argument('--image_size', type=int, default=1024)
     parser.add_argument('--input_size', type=int, default=512)
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--learning_rate', type=float, default=1e-2)
-    parser.add_argument('--max_epoch', type=int, default=150)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--max_epoch', type=int, default=200)
     parser.add_argument('--save_interval', type=int, default=50)
 
     args = parser.parse_args()
@@ -55,10 +56,15 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model.to(device)
     # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     # optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
-    optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    # scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, 50, eta_min=1e-04, last_epoch=-1, verbose=False)
     
     model.train()
+
+    wandb.init(name = f'augment_blur_noise_ver0.1',project="ocr", entity="boostcamp-cv-01-ocr")
+
+
     for epoch in range(max_epoch):
         epoch_loss, epoch_start = 0, time.time()
         with tqdm(total=num_batches) as pbar:
@@ -79,12 +85,20 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     'IoU loss': extra_info['iou_loss']
                 }
                 pbar.set_postfix(val_dict)
+                wandb.log({
+                    "loss": epoch_loss / num_batches,
+                    "cls_loss" : extra_info['cls_loss'],
+                    "angle_loss": extra_info['angle_loss'],
+                    "iou_loss" : extra_info['iou_loss']})
+
+
 
         scheduler.step()
         mean_loss = epoch_loss / num_batches
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             mean_loss, timedelta(seconds=time.time() - epoch_start)))
         
+        stop_cnt = 0
         if epoch == 0 :
             if not osp.exists(model_dir):
                 os.makedirs(model_dir)
@@ -96,6 +110,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             ckpt_fpath = osp.join(model_dir, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'save best_pth')
+            stop_cnt = 0
+        else:
+            stop_cnt += 1
         
         if (epoch + 1) % save_interval == 0:
             if not osp.exists(model_dir):
@@ -103,6 +120,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
             ckpt_fpath = osp.join(model_dir, 'latest.pth')
             torch.save(model.state_dict(), ckpt_fpath)
+        if stop_cnt == 10 :
+            print("Early stopping")
+            break
         
         pre_mean_loss = mean_loss
             

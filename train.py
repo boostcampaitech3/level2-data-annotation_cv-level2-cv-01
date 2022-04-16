@@ -59,7 +59,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     #scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=30, eta_min=0.0001)
 
-    pre_mean_loss = 0
+    pre_mean_loss = float("inf")
     stop_cnt =0
 
     model.train()

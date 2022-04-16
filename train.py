@@ -62,7 +62,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     
     model.train()
 
-    wandb.init(name = f'augment_blur_noise_ver0.1',project="ocr", entity="boostcamp-cv-01-ocr")
+    wandb.init(name = f'augment_blur_noise_ver0.2',project="ocr", entity="boostcamp-cv-01-ocr")
 
 
     for epoch in range(max_epoch):

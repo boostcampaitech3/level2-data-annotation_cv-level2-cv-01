@@ -58,7 +58,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     # optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     # scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, 50, eta_min=1e-04, last_epoch=-1, verbose=False)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, 10, eta_min=1e-04, last_epoch=-1, verbose=False)
     
     model.train()
 
@@ -104,6 +104,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 os.makedirs(model_dir)
             ckpt_fpath = osp.join(model_dir, 'first.pth')
             torch.save(model.state_dict(), ckpt_fpath)
+            pre_mean_loss = mean_loss
             print(f'save first.pth')
         
         elif mean_loss < pre_mean_loss :

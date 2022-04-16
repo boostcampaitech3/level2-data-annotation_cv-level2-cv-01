@@ -64,7 +64,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
     wandb.init(name = f'augment_blur_noise_ver0.2',project="ocr", entity="boostcamp-cv-01-ocr")
 
-
+    stop_cnt = 0
     for epoch in range(max_epoch):
         epoch_loss, epoch_start = 0, time.time()
         with tqdm(total=num_batches) as pbar:
@@ -98,7 +98,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             mean_loss, timedelta(seconds=time.time() - epoch_start)))
         
-        stop_cnt = 0
+        
         if epoch == 0 :
             if not osp.exists(model_dir):
                 os.makedirs(model_dir)
@@ -111,6 +111,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'save best_pth')
             stop_cnt = 0
+            pre_mean_loss = mean_loss
         else:
             stop_cnt += 1
         
@@ -124,7 +125,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             print("Early stopping")
             break
         
-        pre_mean_loss = mean_loss
+        
             
 
 

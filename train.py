@@ -16,6 +16,9 @@ from dataset import SceneTextDataset
 from model import EAST
 
 import wandb
+from detect import detect, get_bboxes
+from deteval import calc_deteval_metrics
+import numpy as np
 
 def parse_args():
     parser = ArgumentParser()
@@ -62,14 +65,56 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     
     model.train()
 
-    wandb.init(name = f'augment_blur_noise_ver0.2',project="ocr", entity="boostcamp-cv-01-ocr")
+    wandb.init(name = f'augment_camera_ver0.5',project="ocr", entity="boostcamp-cv-01-ocr")
 
-    stop_cnt = 0
+    # stop_cnt = 0
+    
     for epoch in range(max_epoch):
         epoch_loss, epoch_start = 0, time.time()
+        gt_bboxes, pred_bboxes, trans = [], [], []
         with tqdm(total=num_batches) as pbar:
             for img, gt_score_map, gt_geo_map, roi_mask in train_loader:
                 pbar.set_description('[Epoch {}]'.format(epoch + 1))
+
+                #########################################
+                # making bbox info for deteval code start
+                orig_sizes = []
+                for image in img:
+                    orig_sizes.append(image.shape[1:3])
+                gt_bbox = []
+                pred_bbox = []
+                tran = []
+                with torch.no_grad():
+                    pred_score_map, pred_geo_map = model.forward(img.to(device))
+                
+                
+                for gt_score, gt_geo, pred_score, pred_geo, orig_size in zip(gt_score_map.cpu().numpy(), gt_geo_map.cpu().numpy(), pred_score_map.cpu().numpy(), pred_geo_map.cpu().numpy(), orig_sizes):
+                    gt_bbox_angle = get_bboxes(gt_score, gt_geo)
+                    pred_bbox_angle = get_bboxes(pred_score, pred_geo)
+                    if gt_bbox_angle is None:
+                        gt_bbox_angle = np.zeros((0, 4, 2), dtype=np.float32)
+                        tran_angle = []
+                    else:
+                        gt_bbox_angle = gt_bbox_angle[:, :8].reshape(-1, 4, 2)
+                        gt_bbox_angle *= max(orig_size) / input_size
+                        tran_angle = ['null' for _ in range(gt_bbox_angle.shape[0])]
+                    if pred_bbox_angle is None:
+                        pred_bbox_angle = np.zeros((0, 4, 2), dtype=np.float32)
+                    else:
+                        pred_bbox_angle = pred_bbox_angle[:, :8].reshape(-1, 4, 2)
+                        pred_bbox_angle *= max(orig_size) / input_size
+                        
+                    tran.append(tran_angle)
+                    gt_bbox.append(gt_bbox_angle)
+                    pred_bbox.append(pred_bbox_angle)
+                    
+
+                gt_bboxes.extend(gt_bbox)
+                pred_bboxes.extend(pred_bbox)
+                trans.extend(tran)
+                # making bbox info for deteval code end
+                #######################################
+
 
                 loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                 optimizer.zero_grad()
@@ -92,11 +137,29 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     "iou_loss" : extra_info['iou_loss']})
 
 
-
+        
         scheduler.step()
         mean_loss = epoch_loss / num_batches
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             mean_loss, timedelta(seconds=time.time() - epoch_start)))
+        
+        ####################
+        # deteval code start
+        img_len = len(dataset)
+        pred_bboxes_dict, gt_bboxes_dict, trans_dict = dict(), dict(), dict()
+        for img_num in range(img_len):
+            pred_bboxes_dict[f'img_{img_num}'] = pred_bboxes[img_num]
+            gt_bboxes_dict[f'img_{img_num}'] = gt_bboxes[img_num]
+            trans_dict[f'img_{img_num}'] = trans[img_num]
+        
+        deteval_dict = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, trans_dict)
+        metric_dict = deteval_dict['total']
+        precision = metric_dict['precision']
+        recall = metric_dict['recall']
+        hmean = metric_dict['hmean']
+        print(f"precision : {precision}, recall : {recall}, hmean : {hmean}")
+        # deteval code end
+        ####################
         
         
         if epoch == 0 :
@@ -111,10 +174,10 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             ckpt_fpath = osp.join(model_dir, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'save best_pth')
-            stop_cnt = 0
+            # stop_cnt = 0
             pre_mean_loss = mean_loss
-        else:
-            stop_cnt += 1
+        # else:
+        #     stop_cnt += 1
         
         if (epoch + 1) % save_interval == 0:
             if not osp.exists(model_dir):
@@ -122,9 +185,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
             ckpt_fpath = osp.join(model_dir, 'latest.pth')
             torch.save(model.state_dict(), ckpt_fpath)
-        if stop_cnt == 10 :
-            print("Early stopping")
-            break
+        # if stop_cnt == 10 :
+        #     print("Early stopping")
+        #     break
         
         
             

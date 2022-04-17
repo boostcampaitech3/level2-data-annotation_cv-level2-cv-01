@@ -363,23 +363,57 @@ class SceneTextDataset(Dataset):
 
         image = Image.open(image_fpath)
 
-        blur_transform = A.OneOf([
-            A.GaussianBlur(),
-            A.GlassBlur(),
-            A.MotionBlur(),
-            A.MedianBlur(),
-            # A.AdvancedBlur(),
-            A.Blur()
-        ], p = 0.5)
+        # blur_transform = A.OneOf([
+        #     A.GaussianBlur(),
+        #     A.GlassBlur(),
+        #     A.MotionBlur(),
+        #     A.MedianBlur(),
+        #     # A.AdvancedBlur(),
+        #     A.Blur()
+        # ], p = 0.5)
         # noise_transform = A.OneOf([
         #     A.GaussNoise(),
         #     A.ISONoise(), # 카메라 센서 Noise
-        #     A.MultiplicativeNoise()
+        #     A.MultiplicativeNoise(),
         # ], p = 0.5)
+        # camera_transform = A.OneOf([
+        #     A.ImageCompression(),
+        #     A.JpegCompression(),
+        #     A.RandomBrightness(),
+        #     A.RandomContrast(),
+        #     A.RandomBrightnessContrast(),
+        #     A.Superpixels()
+        # ], p=0.5)
+        weather_transform = A.OneOf([
+            A.RandomFog(),
+            A.RandomRain(),
+            A.RandomShadow(),
+            A.RandomSnow(),
+            A.RandomSunFlare()
+        ], p=0.5)
+        # custom_transform = A.OneOf([
+        #     A.CLAHE(),
+        #     A.Emboss(),
+        #     A.RandomToneCurve(),
+        #     A.Downscale()
+        # ], p=0.5)
+        # other_transform = A.OneOf([
+        #     A.Equalize(),
+        #     A.FancyPCA(),
+        #     A.InvertImg(),
+        #     A.Posterize(),
+        #     A.Solarize(),
+        #     A.Sharpen(),
+        # ], p=0.5)
+        # color_transform = A.OneOf([
+        #     A.ToGray(),
+        #     A.ToSepia(),
+        #     A.ChannelShuffle(),
+        # ], p=0.5)
 
 
         funcs0 = []
-        funcs0.append(blur_transform)
+        funcs0.append(weather_transform)
 
         # funcs0.append(noise_transform)
         transform0 = A.Compose(funcs0)
@@ -403,6 +437,7 @@ class SceneTextDataset(Dataset):
             funcs.append(A.ColorJitter(0.5, 0.5, 0.5, 0.25))
         if self.normalize:
             funcs.append(A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)))
+            # funcs.append(A.Normalize())
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']

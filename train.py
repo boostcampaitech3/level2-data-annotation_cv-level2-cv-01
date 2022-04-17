@@ -16,7 +16,7 @@ from dataset import SceneTextDataset
 from model import EAST
 
 import wandb
-from detect import detect, get_bboxes
+from detect import get_bboxes
 from deteval import calc_deteval_metrics
 import numpy as np
 
@@ -65,7 +65,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     
     model.train()
 
-    wandb.init(name = f'augment_camera_ver0.5',project="ocr", entity="boostcamp-cv-01-ocr")
+    wandb.init(name = f'augment_weather_ver0.5',project="ocr", entity="boostcamp-cv-01-ocr")
 
     # stop_cnt = 0
     
@@ -157,7 +157,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         precision = metric_dict['precision']
         recall = metric_dict['recall']
         hmean = metric_dict['hmean']
-        print(f"precision : {precision}, recall : {recall}, hmean : {hmean}")
+        print(f"precision : {precision:.4f}, recall : {recall:.4f}, hmean : {hmean:.4f}")
         # deteval code end
         ####################
         

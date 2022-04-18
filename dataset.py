@@ -385,19 +385,19 @@ class SceneTextDataset(Dataset):
         #     A.RandomBrightnessContrast(),
         #     A.Superpixels()
         # ], p=0.5)
-        weather_transform = A.OneOf([
-            A.RandomFog(),
-            A.RandomRain(),
-            A.RandomShadow(),
-            A.RandomSnow(),
-            A.RandomSunFlare()
-        ], p=0.5)
-        # custom_transform = A.OneOf([
-        #     A.CLAHE(),
-        #     A.Emboss(),
-        #     A.RandomToneCurve(),
-        #     A.Downscale()
+        # weather_transform = A.OneOf([
+        #     A.RandomFog(),
+        #     A.RandomRain(),
+        #     A.RandomShadow(),
+        #     A.RandomSnow(),
+        #     A.RandomSunFlare()
         # ], p=0.5)
+        custom_transform = A.OneOf([
+            A.CLAHE(),
+            A.Emboss(),
+            A.RandomToneCurve(),
+            A.Downscale()
+        ], p=0.5)
         # other_transform = A.OneOf([
         #     A.Equalize(),
         #     A.FancyPCA(),
@@ -414,7 +414,7 @@ class SceneTextDataset(Dataset):
 
 
         funcs0 = []
-        funcs0.append(weather_transform)
+        funcs0.append(custom_transform)
 
         # funcs0.append(noise_transform)
         transform0 = A.Compose(funcs0)

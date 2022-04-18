@@ -65,7 +65,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     
     model.train()
 
-    wandb.init(name = f'augment_weather_ver0.5',project="ocr", entity="boostcamp-cv-01-ocr")
+    wandb.init(name = f'augment_custom_ver0.6',project="ocr", entity="boostcamp-cv-01-ocr")
 
     # stop_cnt = 0
     

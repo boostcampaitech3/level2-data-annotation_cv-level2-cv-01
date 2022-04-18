@@ -142,7 +142,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         mean_loss = epoch_loss / num_batches
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             mean_loss, timedelta(seconds=time.time() - epoch_start)))
-        wandb.log({'f1_score' : hmean})
+        
         ####################
         # deteval code start
         img_len = len(dataset)
@@ -160,7 +160,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         print(f"precision : {precision:.4f}, recall : {recall:.4f}, hmean : {hmean:.4f}")
         # deteval code end
         ####################
-        
+        wandb.log({'f1_score' : hmean})
         
         if epoch == 0 :
             if not osp.exists(model_dir):

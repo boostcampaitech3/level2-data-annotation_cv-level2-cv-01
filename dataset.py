@@ -341,6 +341,30 @@ class SceneTextDataset(Dataset):
 
         self.anno = anno
         self.image_fnames = sorted(anno['images'].keys())
+
+        new_image_fnames = []
+        
+        
+        for image_fname in self.image_fnames:
+            if self.anno['images'][image_fname]['words']:
+                for word_info in self.anno['images'][image_fname]['words'].values():
+                    if len(np.array(word_info['points']).flatten()) != 8:
+                        break
+                else:
+                    new_image_fnames.append(image_fname)
+        
+
+        self.image_fnames = new_image_fnames
+        
+        # for image_fname in self.image_fnames:
+        #     if self.anno['images'][image_fname]['words']:
+        #         for key, word_info in self.anno['images'][image_fname]['words'].items():
+        #             if len(np.array(word_info['points']).flatten()) != 8:
+        #                 new_word_info = [word_info['points'][:, 0].min(), word_info['points'][:, 1].min(), word_info['points'][:, 0].max(), word_info['points'][:, 1].max()]
+        #                 new_points = np.array([[new_word_info[0], new_word_info[1]], [new_word_info[2], new_word_info[1]], [new_word_info[2], new_word_info[3]], [new_word_info[0], new_word_info[3]]])
+        #                 self.anno['images'][image_fname]['words'][key] = new_points
+
+
         self.image_dir = osp.join(root_dir, 'images')
 
         self.image_size, self.crop_size = image_size, crop_size

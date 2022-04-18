@@ -25,7 +25,7 @@ def parse_args():
 
     # Conventional args
     parser.add_argument('--data_dir', type=str,
-                        default=os.environ.get('SM_CHANNEL_TRAIN', '../input/data/ICDAR17_Korean'))
+                        default=os.environ.get('SM_CHANNEL_TRAIN', '../input/data/aistage'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR',
                                                                         'trained_models'))
 
@@ -142,7 +142,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         mean_loss = epoch_loss / num_batches
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             mean_loss, timedelta(seconds=time.time() - epoch_start)))
-        
+        wandb.log({'f1_score' : hmean})
         ####################
         # deteval code start
         img_len = len(dataset)
@@ -167,15 +167,15 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 os.makedirs(model_dir)
             ckpt_fpath = osp.join(model_dir, 'first.pth')
             torch.save(model.state_dict(), ckpt_fpath)
-            pre_mean_loss = mean_loss
+            pre_hmean = hmean
             print(f'save first.pth')
         
-        elif mean_loss < pre_mean_loss :
+        elif pre_hmean < hmean :
             ckpt_fpath = osp.join(model_dir, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'save best_pth')
             # stop_cnt = 0
-            pre_mean_loss = mean_loss
+            pre_hmean = hmean
         # else:
         #     stop_cnt += 1
         

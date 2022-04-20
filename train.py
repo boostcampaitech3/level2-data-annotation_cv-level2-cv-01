@@ -68,7 +68,6 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     wandb.init(name = f'augment_custom_ver0.7',project="ocr", entity="boostcamp-cv-01-ocr")
 
     # stop_cnt = 0
-    
     for epoch in range(max_epoch):
         epoch_loss, epoch_start = 0, time.time()
         gt_bboxes, pred_bboxes, trans = [], [], []
@@ -76,12 +75,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             for img, gt_score_map, gt_geo_map, roi_mask in train_loader:
                 pbar.set_description('[Epoch {}]'.format(epoch + 1))
 
-                try:
-                    loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
-                except:
-                    print(img)
-                    call_error = True
-                    continue
+                
+                loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
+                
 
 
                 #########################################
@@ -146,9 +142,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     "angle_loss": extra_info['angle_loss'],
                     "iou_loss" : extra_info['iou_loss']})
 
-        if call_error:
-            call_error = False
-            continue
+        # if call_error:
+        #     call_error = False
+        #     continue
         
         scheduler.step()
         mean_loss = epoch_loss / num_batches

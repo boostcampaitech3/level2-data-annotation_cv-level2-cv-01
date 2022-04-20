@@ -9,6 +9,8 @@ import cv2
 import albumentations as A
 from torch.utils.data import Dataset
 from shapely.geometry import Polygon
+from albumentations.pytorch import ToTensorV2
+from custom_aug import ComposedTransformation
 
 
 def cal_distance(x1, y1, x2, y2):
@@ -380,6 +382,7 @@ class SceneTextDataset(Dataset):
         vertices, labels = [], []
         for word_info in self.anno['images'][image_fname]['words'].values():
             vertices.append(np.array(word_info['points']).flatten())
+            # vertices.append(np.array(word_info['points']))
             labels.append(int(not word_info['illegibility']))
         vertices, labels = np.array(vertices, dtype=np.float32), np.array(labels, dtype=np.int64)
 
@@ -420,7 +423,7 @@ class SceneTextDataset(Dataset):
             A.CLAHE(),
             A.Emboss(),
             A.RandomToneCurve(),
-            A.Downscale()
+            # A.Downscale()
         ], p=0.5)
         # other_transform = A.OneOf([
         #     A.Equalize(),
@@ -446,15 +449,26 @@ class SceneTextDataset(Dataset):
             image = image.convert('RGB')
         image = np.array(image)
         image = transform0(image=image)['image']
-        image=Image.fromarray(image)
-        image, vertices = resize_img(image, vertices, self.image_size)
-        image, vertices = adjust_height(image, vertices)
-        image, vertices = rotate_img(image, vertices)
-        image, vertices = crop_img(image, vertices, labels, self.crop_size)
+        transform1 = ComposedTransformation(
+            rotate_range=30, crop_aspect_ratio=1.0, crop_size=(0.5, 0.5),
+            hflip=True, vflip=True, random_translate=True,
+            resize_to=512,
+            min_image_overlap=0.9, min_bbox_overlap=0.99, min_bbox_count=1, allow_partial_occurrence=False,
+            max_random_trials=1000,
+        )
 
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        image = np.array(image)
+        # image=Image.fromarray(image)
+        # image, vertices = resize_img(image, vertices, self.image_size)
+        # image, vertices = adjust_height(image, vertices)
+        # image, vertices = rotate_img(image, vertices)
+        # image, vertices = crop_img(image, vertices, labels, self.crop_size)
+
+        # if image.mode != 'RGB':
+        #     image = image.convert('RGB')
+        # image = np.array(image)
+        image = transform1(image= image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))['image']
+        word_bboxes = transform1(image=image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))['word_bboxes']
+
 
         funcs = []
 
@@ -466,7 +480,8 @@ class SceneTextDataset(Dataset):
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']
-        word_bboxes = np.reshape(vertices, (-1, 4, 2))
-        roi_mask = generate_roi_mask(image, vertices, labels)
+        word_bboxes = np.reshape(word_bboxes, (-1, 4, 2))
+        roi_mask = generate_roi_mask(image, word_bboxes, labels)
+        
 
         return image, word_bboxes, roi_mask

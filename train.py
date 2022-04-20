@@ -76,7 +76,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 pbar.set_description('[Epoch {}]'.format(epoch + 1))
 
                 
-                loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
+                # loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                 
 
 
@@ -88,13 +88,13 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 gt_bbox = []
                 pred_bbox = []
                 tran = []
-                # with torch.no_grad():
-                #     pred_score_map, pred_geo_map = model.forward(img.to(device))
-                pred_score_map = extra_info["score_map"]
-                pred_geo_map = extra_info["geo_map"]
+                with torch.no_grad():
+                    pred_score_map, pred_geo_map = model.forward(img.to(device))
+                # pred_score_map = extra_info["score_map"]
+                # pred_geo_map = extra_info["geo_map"]
                 
-                # for gt_score, gt_geo, pred_score, pred_geo, orig_size in zip(gt_score_map.cpu().numpy(), gt_geo_map.cpu().numpy(), pred_score_map.cpu().numpy(), pred_geo_map.cpu().numpy(), orig_sizes):
-                for gt_score, gt_geo, pred_score, pred_geo, orig_size in zip(gt_score_map.cpu().numpy(), gt_geo_map.cpu().numpy(), pred_score_map.cpu().detach().numpy(), pred_geo_map.cpu().detach().numpy(), orig_sizes):
+                for gt_score, gt_geo, pred_score, pred_geo, orig_size in zip(gt_score_map.cpu().numpy(), gt_geo_map.cpu().numpy(), pred_score_map.cpu().numpy(), pred_geo_map.cpu().numpy(), orig_sizes):
+                # for gt_score, gt_geo, pred_score, pred_geo, orig_size in zip(gt_score_map.cpu().numpy(), gt_geo_map.cpu().numpy(), pred_score_map.cpu().detach().numpy(), pred_geo_map.cpu().detach().numpy(), orig_sizes):
                     gt_bbox_angle = get_bboxes(gt_score, gt_geo)
                     pred_bbox_angle = get_bboxes(pred_score, pred_geo)
                     if gt_bbox_angle is None:
@@ -122,7 +122,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 #######################################
 
 
-                # loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
+                loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

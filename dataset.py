@@ -466,8 +466,9 @@ class SceneTextDataset(Dataset):
         # if image.mode != 'RGB':
         #     image = image.convert('RGB')
         # image = np.array(image)
-        image = transform1(image= image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))['image']
-        word_bboxes = transform1(image=image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))['word_bboxes']
+        transformed_1 = transform1(image= image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))
+        image = transformed_1['image']
+        word_bboxes = transformed_1['word_bboxes']
 
 
         funcs = []

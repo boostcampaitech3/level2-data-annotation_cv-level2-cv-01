@@ -449,26 +449,26 @@ class SceneTextDataset(Dataset):
             image = image.convert('RGB')
         image = np.array(image)
         image = transform0(image=image)['image']
-        transform1 = ComposedTransformation(
-            rotate_range=30, crop_aspect_ratio=1.0, crop_size=(0.5, 0.5),
-            hflip=True, vflip=True, random_translate=True,
-            resize_to=512,
-            min_image_overlap=0.9, min_bbox_overlap=0.99, min_bbox_count=1, allow_partial_occurrence=False,
-            max_random_trials=1000,
-        )
+        # transform1 = ComposedTransformation(
+        #     rotate_range=10, crop_aspect_ratio=1.0, crop_size=(0.5, 0.5),
+        #     hflip=True, vflip=True, random_translate=True,
+        #     resize_to=512,
+        #     min_image_overlap=0.9, min_bbox_overlap=0.99, min_bbox_count=1, allow_partial_occurrence=False,
+        #     max_random_trials=1000,
+        # )
 
-        # image=Image.fromarray(image)
-        # image, vertices = resize_img(image, vertices, self.image_size)
-        # image, vertices = adjust_height(image, vertices)
-        # image, vertices = rotate_img(image, vertices)
-        # image, vertices = crop_img(image, vertices, labels, self.crop_size)
+        image=Image.fromarray(image)
+        image, vertices = resize_img(image, vertices, self.image_size)
+        image, vertices = adjust_height(image, vertices)
+        image, vertices = rotate_img(image, vertices)
+        image, vertices = crop_img(image, vertices, labels, self.crop_size)
 
-        # if image.mode != 'RGB':
-        #     image = image.convert('RGB')
-        # image = np.array(image)
-        transformed_1 = transform1(image= image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))
-        image = transformed_1['image']
-        word_bboxes = transformed_1['word_bboxes']
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        image = np.array(image)
+        # transformed_1 = transform1(image= image, word_bboxes=list(np.reshape(vertices, (-1, 4, 2))))
+        # image = transformed_1['image']
+        # word_bboxes = transformed_1['word_bboxes']
 
 
         funcs = []
@@ -477,12 +477,12 @@ class SceneTextDataset(Dataset):
             funcs.append(A.ColorJitter(0.5, 0.5, 0.5, 0.25))
         if self.normalize:
             funcs.append(A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)))
-            # funcs.append(A.Normalize())
+            funcs.append(A.Normalize())
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']
-        word_bboxes = np.reshape(word_bboxes, (-1, 4, 2))
-        roi_mask = generate_roi_mask(image, word_bboxes, labels)
+        word_bboxes = np.reshape(vertices, (-1, 4, 2))
+        roi_mask = generate_roi_mask(image, vertices, labels)
         
 
         return image, word_bboxes, roi_mask
